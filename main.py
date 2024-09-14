@@ -1,3 +1,4 @@
+import itertools
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -10,6 +11,7 @@ from bson.binary import UUID as BsonUUID
 from typing import Optional, Annotated
 from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 from enum import Enum
+from azure import generate_response
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -23,6 +25,9 @@ class User(BaseModel):
     username: str
     role: str
     preferences: Optional[dict] = None
+    average_rating: Optional[float] = None
+    num_ratings: Optional[int] = None
+    # TODO: Do we want rating descriptions? Or just rating values?
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -123,14 +128,21 @@ async def list_dishes(
     vegetarian: Optional[bool] = None,
     halal: Optional[bool] = None
 ):
-    filtered_dishes = dishes
+    filtered_dishes = dishes        # Where is dishes defined? Read from db?
+    dishes_result = []              # a list to store the dishes that match the criteria
     if spice_level:
         filtered_dishes = [dish for dish in filtered_dishes if any(tag.name == spice_level for tag in dish.tags)]
+        dishes_result.append(filtered_dishes)
     if vegetarian is not None:
         filtered_dishes = [dish for dish in filtered_dishes if any(tag.name == "vegetarian" for tag in dish.tags) == vegetarian]
+        dishes_result.append(filtered_dishes)
     if halal is not None:
         filtered_dishes = [dish for dish in filtered_dishes if any(tag.name == "halal" for tag in dish.tags) == halal]
-    return filtered_dishes
+        dishes_result.append(filtered_dishes)
+    
+    dishes_result = list(itertools.chain(*dishes_result))
+
+    return dishes_result          # return a list of dishes that match the criteria
 
 # A dish feed for a user
 # @app.get("/dishes/", response_model=List[Dish])
@@ -181,6 +193,43 @@ async def match_buyer_with_dish(dish_id: str, buyer_id: str):
         raise HTTPException(status_code=500, detail="Failed to update dish")
 
     return {"message": "Match successful", "dish_id": str(dish_obj_id), "buyer_id": str(buyer_obj_id)}
+
+# Add rating to the user
+@app.post("/add_rating/{user_id}")
+async def add_rating(user_id: str, rating: float):
+
+    current_user = users_collection.find_one({"_id": user_id})
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    average_rating = current_user.get("average_rating", 0)
+    num_ratings = current_user.get("num_ratings", 0)
+
+    new_num_ratings = num_ratings + 1
+    new_average_rating = (average_rating + rating)/new_num_ratings
+
+    result = users_collection.update_one(
+        {"_id": user_id},
+        {"$set": {"average_rating": new_average_rating, "num_ratings": new_num_ratings}}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to update user")
+
+    return {"message": "Rating added successfully", "average_rating": new_average_rating, "num_ratings": new_num_ratings}   
+        
+
+# add api to communicate with azure openai
+@app.post("/ask_gpt4")
+async def ask_gpt4(prompt: str, task: str, context: str = None):
+    response = generate_response(
+        user_prompt=prompt,
+        task=task,
+        context=context
+    )
+
+    return response
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
