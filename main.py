@@ -2,6 +2,9 @@ import itertools
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from pydantic import BaseModel, Field, BeforeValidator, ConfigDict, NonNegativeFloat
+from typing import List, Optional, Annotated
 from uuid import UUID
 from db import client
 from bson import ObjectId
@@ -9,7 +12,6 @@ import base64
 import uvicorn
 from bson.binary import UUID as BsonUUID
 from typing import Optional, Annotated
-from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 from enum import Enum
 from azure import generate_response
 
@@ -38,14 +40,28 @@ class User(BaseModel):
     @property
     def user_role(self) -> UserRole:
         return UserRole(self.role)
+    
+class SpiceLevel(str, Enum):
+    LESS = "less"
+    MEDIUM = "medium"
+    HOT = "hot"
+
+class NutritionInfo(BaseModel):
+    protein: NonNegativeFloat
+    carbs: NonNegativeFloat
+    fiber: NonNegativeFloat
 
 class Dish(BaseModel):
+    id: ObjectId = Field(default_factory=ObjectId, alias="_id")
     title: str
     description: str
     seller_id: Optional[PyObjectId] = Field(alias="seller_id", default=None)
     matched_buyer_id: Optional[PyObjectId] = Field(alias="matched_buyer_id", default=None)
     image_url: str
     tags: str
+    nutrition: NutritionInfo
+    non_veg: Optional[bool] = Field(default=None)
+    spice_level: Optional[SpiceLevel] = Field(default=None)
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -55,6 +71,13 @@ class Dish(BaseModel):
 
 class CreateDishResponse(BaseModel):
     id: str
+
+class CreateDishRequest(BaseModel):
+    title: str
+    description: str
+    seller_id: str
+    tags: str
+    nutrition: NutritionInfo
 
 # Get the database and collection
 db = client.get_database("peerplates")
@@ -87,28 +110,42 @@ async def create_user(user: User):
 # Create a dish
 @app.post("/dishes", response_model=CreateDishResponse)
 async def create_dish(
-    title: str,
-    description: str,
-    seller_id: str,
-    tags: str,
+    title: Optional[str],
+    description: Optional[str],
+    seller_id: Optional[str],
+    tags: Optional[str],
+    protein: Optional[float],
+    carbs: Optional[float],
+    fiber: Optional[float],
+    non_veg: Optional[bool],
+    spice_level: Optional[SpiceLevel],
     image: UploadFile = File(...)
 ):
-    # Read the image file and encode it as base64
-    image_content = await image.read()
-    image_base64 = base64.b64encode(image_content).decode('utf-8')
-
-    new_dish = Dish(
-        title=title,
-        description=description,
-        seller_id=UUID(seller_id),
-        image_url=f"data:image/{image.content_type};base64,{image_base64}",
-        tags=tags,
+    image_base64 = None
+    if image:
+        image_content = await image.read()
+        image_base64 = base64.b64encode(image_content).decode('utf-8')
+    
+    
+    nutrition = NutritionInfo(
+        protein=protein or 0,
+        carbs=carbs or 0,
+        fiber=fiber or 0,
     )
     
+    new_dish = Dish(
+        title=title or "",
+        description=description or "",
+        seller_id=ObjectId(seller_id) if seller_id else None,
+        image_url=f"data:image/jpeg;base64,{image_base64}" if image_base64 else None,
+        tags=tags,
+        nutrition=nutrition,
+        non_veg=non_veg,
+        spice_level=spice_level
+    )
     
-    result = dishes_collection.insert_one(new_dish.model_dump())
-    response = CreateDishResponse(id=str(result.inserted_id))
-    return response
+    result = dishes_collection.insert_one(new_dish.model_dump(by_alias=True))
+    return CreateDishResponse(id=str(result.inserted_id))
 
 # Update a dish
 @app.put("/dishes/{dish_id}", response_model=Dish)
