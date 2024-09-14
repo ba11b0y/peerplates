@@ -16,6 +16,8 @@ Create a `.env` file with the following environment variables:
 
 ```bash
 MONGODB_PASSWORD=<your-mongodb-password>
+AZURE_OPENAI_API_KEY=<your-azure-api>
+AZURE_ENDPOINT=<your-azure-endpoint>
 ```
 
 Then source the `.env` file:
