@@ -1,34 +1,51 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 from db import client
 from bson import ObjectId
 import base64
 import uvicorn
-from uuid import uuid4
-from bson import Binary
 from bson.binary import UUID as BsonUUID
 from typing import Optional, Annotated
 from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
+from enum import Enum
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 app = FastAPI()
 
+class UserRole(Enum):
+    SELLER = "seller"
+    BUYER = "buyer"
+
+class User(BaseModel):
+    username: str
+    role: str
+    preferences: Optional[dict] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
+
+    @property
+    def user_role(self) -> UserRole:
+        return UserRole(self.role)
 
 class Dish(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
     title: str
     description: str
     seller_id: Optional[PyObjectId] = Field(alias="seller_id", default=None)
+    matched_buyer_id: Optional[PyObjectId] = Field(alias="matched_buyer_id", default=None)
     image_url: str
     tags: str
 
     model_config = ConfigDict(
+        populate_by_name=True,
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str},
-        populate_by_name=True
+        json_encoders={ObjectId: str}
     )
 
 class CreateDishResponse(BaseModel):
@@ -37,6 +54,7 @@ class CreateDishResponse(BaseModel):
 # Get the database and collection
 db = client.get_database("peerplates")
 dishes_collection = db.dishes
+users_collection = db.users
 
 # Update the in-memory storage to use MongoDB
 dishes = list(dishes_collection.find())
@@ -49,6 +67,15 @@ def dish_helper(dish):
     if 'seller_id' in dish:
         dish['seller_id'] = str(BsonUUID(dish['seller_id']))
     return dish
+
+# User endpoints
+
+# Create a user
+@app.post("/users", response_model=User)
+async def create_user(user: User):
+    result = users_collection.insert_one(user.model_dump())
+    return user
+
 
 
 # Seller endpoints
@@ -124,6 +151,36 @@ async def list_dishes(
 #     return [dish_helper(dish) for dish in dishes]
 
 
+
+@app.post("/match/{dish_id}/{buyer_id}")
+async def match_buyer_with_dish(dish_id: str, buyer_id: str):
+    # Validate ObjectIds
+    try:
+        dish_obj_id = ObjectId(dish_id)
+        buyer_obj_id = ObjectId(buyer_id)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid dish_id or buyer_id")
+
+    # Check if the dish exists and is not already matched
+    dish = dishes_collection.find_one({"_id": dish_obj_id, "matched_buyer_id": None})
+    if not dish:
+        raise HTTPException(status_code=404, detail="Dish not found or already matched")
+
+    # Check if the buyer exists and is a buyer
+    buyer = users_collection.find_one({"_id": buyer_obj_id, "role": UserRole.BUYER.value})
+    if not buyer:
+        raise HTTPException(status_code=404, detail="Buyer not found or not a buyer")
+
+    # Update the dish with the matched buyer
+    result = dishes_collection.update_one(
+        {"_id": dish_obj_id},
+        {"$set": {"matched_buyer_id": buyer_obj_id}}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to update dish")
+
+    return {"message": "Match successful", "dish_id": str(dish_obj_id), "buyer_id": str(buyer_obj_id)}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
