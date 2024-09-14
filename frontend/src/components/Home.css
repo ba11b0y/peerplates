@@ -1,0 +1,26 @@
+/* src/components/Home.css */
+
+.home-container {
+	display: flex;
+	flex-direction: column; /* Change to 'row' for horizontal layout */
+	height: 100vh;
+	margin: 0;
+  }
+  
+  .home-button {
+	flex: 1;
+	font-size: 48px;
+	font-weight: bold;
+	color: #fff;
+	border: none;
+	cursor: pointer;
+  }
+  
+  .buy-button {
+	background-color: #4caf50; /* Green */
+  }
+  
+  .sell-button {
+	background-color: #2196f3; /* Blue */
+  }
+  
