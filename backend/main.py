@@ -26,7 +26,7 @@ class UserRole(Enum):
 class User(BaseModel):
     username: str
     role: str
-    preferences: Optional[dict] = None
+    preferences: str
     average_rating: Optional[float] = None
     num_ratings: Optional[int] = None
     # TODO: Do we want rating descriptions? Or just rating values?
