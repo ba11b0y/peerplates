@@ -5,6 +5,7 @@ import { useSwipeable } from 'react-swipeable';
 import { useSpring, animated } from 'react-spring';
 import { FaCog, FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import ProfileImagePlaceholder from '../images/rishith.jpg';
+import MatchChat from './MatchChat'; // Import the MatchChat component
 import './SwipeCard.css';
 import axios from 'axios';
 
@@ -13,7 +14,6 @@ function SwipePage() {
   const [showForm, setShowForm] = useState(true);
 
   // State for form input values
-  // const [name, setName] = useState('');
   const [nonVeg, setNonVeg] = useState('yes');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
@@ -26,32 +26,35 @@ function SwipePage() {
   // Chat window state for Matches and Messages
   const [activeTab, setActiveTab] = useState('matches');
 
+  // New state to hold chat data
+  const [chats, setChats] = useState([]); // Store matches for chat
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Gather form data into an object
     const formData = {
-        nonVeg,
-        protein,
-        carbs,
-        fiber,
-        spiceLevel,
+      nonVeg,
+      protein,
+      carbs,
+      fiber,
+      spiceLevel,
     };
 
     // Create a comma-separated string of form data
     const formDataString = Object.entries(formData)
-        .map(([key, value]) => `${key}:${value}`)
-        .join(',');
+      .map(([key, value]) => `${key}:${value}`)
+      .join(',');
 
     const baseUrl = `https://bulldog-humane-ram.ngrok-free.app/dishes?preferences=${formDataString}`;
 
     try {
-        const response = await axios.get(baseUrl);
-        setDishes(response.data);
-        setShowForm(false);
+      const response = await axios.get(baseUrl);
+      setDishes(response.data);
+      setShowForm(false);
     } catch (error) {
-        console.error('Error:', error);
+      console.error('Error:', error);
     }
   };
 
@@ -63,8 +66,8 @@ function SwipePage() {
 
   const swiped = (dir) => {
     if (dir === 'Right') {
-      // Perform action on swipe right
-      alert('Liked: ' + dishes[currentIndex].title);
+      // When swiped right, add the dish to the chats
+      setChats((prevChats) => [...prevChats, dishes[currentIndex]]);
     } else if (dir === 'Left') {
       // Move to next dish
       setCurrentIndex((prevIndex) => (prevIndex + 1) % dishes.length);
@@ -293,7 +296,14 @@ function SwipePage() {
           {activeTab === 'matches' ? (
             <div className="text-center text-gray-500">No matches</div>
           ) : (
-            <div className="text-center text-gray-500">No messages</div>
+            // Render MatchChat components for all chats
+            chats.length > 0 ? (
+              chats.map((chat, idx) => (
+                <MatchChat key={idx} userId="66e5574964f8c85fe6b58215" matchId={chat.id} />
+              ))
+            ) : (
+              <div className="text-center text-gray-500">No messages</div>
+            )
           )}
         </div>
       </div>

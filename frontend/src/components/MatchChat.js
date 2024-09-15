@@ -19,10 +19,11 @@ const MatchChat = ({ userId, matchId }) => {
   const handleSendMessage = useCallback(() => {
     if (inputMessage.trim()) {
       sendMessage(inputMessage);
-      setMessageHistory((prev) => [...prev, { senderId: userId, message: inputMessage }]);
+      // setMessageHistory((prev) => [...prev, { senderId: userId, message: inputMessage }]);
       setInputMessage('');
     }
   }, [inputMessage, sendMessage, userId]);
+  
 
   const connectionStatus = {
     [ReadyState.CONNECTING]: 'Connecting',
