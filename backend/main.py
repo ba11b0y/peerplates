@@ -14,7 +14,7 @@ import uvicorn
 from bson.binary import UUID as BsonUUID
 from typing import Optional, Annotated
 from enum import Enum
-from azure import generate_response
+from azure_api import generate_response, get_all_dishes
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -167,49 +167,50 @@ async def update_dish(dish_id: UUID, updated_dish: Dish):
 
 # Buyer endpoints
 
-# List all dishes
-# TODO: Add an intelligent filter for dishes based on the user's preferences
 @app.get("/dishes", response_model=List[Dish])
 async def list_dishes(
-    spice_level: Optional[str] = None,
-    vegetarian: Optional[bool] = None,
-    halal: Optional[bool] = None
+    preferences: str
 ):
-    filtered_dishes = dishes        # Where is dishes defined? Read from db?
-    dishes_result = []              # a list to store the dishes that match the criteria
-    if spice_level:
-        filtered_dishes = [dish for dish in filtered_dishes if any(tag.name == spice_level for tag in dish.tags)]
-        dishes_result.append(filtered_dishes)
-    if vegetarian is not None:
-        filtered_dishes = [dish for dish in filtered_dishes if any(tag.name == "vegetarian" for tag in dish.tags) == vegetarian]
-        dishes_result.append(filtered_dishes)
-    if halal is not None:
-        filtered_dishes = [dish for dish in filtered_dishes if any(tag.name == "halal" for tag in dish.tags) == halal]
-        dishes_result.append(filtered_dishes)
+    return get_all_dishes()
+
+    # result = generate_response(
+    #     prompt=preferences,
+    #     task="recommend",
+    # )
     
-    dishes_result = list(itertools.chain(*dishes_result))
-
-    return dishes_result          # return a list of dishes that match the criteria
-
-# A dish feed for a user
-# @app.get("/dishes/", response_model=List[Dish])
-# async def list_dishes(
-#     spice_level: Optional[str] = None,
-#     vegetarian: Optional[bool] = None,
-#     halal: Optional[bool] = None
-# ):
-#     query = {}
-#     if spice_level:
-#         query["tags.name"] = spice_level
-#     if vegetarian is not None:
-#         query["tags.name"] = "vegetarian" if vegetarian else {"$ne": "vegetarian"}
-#     if halal is not None:
-#         query["tags.name"] = "halal" if halal else {"$ne": "halal"}
+    # object_ids = [ObjectId(id_str) for id_str in result]
     
-#     dishes = list(dishes_collection.find(query))
-#     return [dish_helper(dish) for dish in dishes]
+    # # Fetch dishes in the same order as the result list
+    # dishes = [dishes_collection.find_one({"_id": obj_id}) for obj_id in object_ids]
+    
+    # return [dish for dish in dishes if dish is not None]
 
+@app.get("/get_description", response_model=str)
+async def get_description(
+    title: str,
+    tags: str,
+    details: str,
+    image: Optional[UploadFile] = File(None)
+):
+    
+    response = generate_response(
+        prompt=f"title: {title}, tags: {tags}, details: {details}",
+        task="describe",
+        title=title,
+        tags=tags,
+        details=details,
+        # image=image
+    )
+    
+    return response
 
+@app.get("/dishes/{dish_id}", response_model=Dish)
+async def get_dish(dish_id: str):
+    dish = dishes_collection.find_one({"_id": dish_id})
+    if not dish:
+        raise HTTPException(status_code=404, detail="Dish not found")
+    
+    return dish
 
 @app.post("/match/{dish_id}/{buyer_id}")
 async def match_buyer_with_dish(dish_id: str, buyer_id: str):
