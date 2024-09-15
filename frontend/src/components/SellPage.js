@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FaCog } from 'react-icons/fa'; // Import FontAwesome icon for settings
 import ProfileImagePlaceholder from '../images/rishith.jpg'; // Replace with the path to your placeholder image
+import axios from 'axios';
 
 function SellPage() {
   // State variables to handle form data
@@ -22,52 +23,60 @@ function SellPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Gather form data into an object
-    const formData = {
-		location,
-		dishName,
-        dietaryRestriction,
-        protein,
-        carbs,
-        fiber,
-        spiceLevel,
-    };
+    let formdata = new FormData();
+    formdata.append("title", dishName);
+    formdata.append("description", `A delicious ${dishName} prepared with care.`);
+    formdata.append("tags", `${dietaryRestriction}, ${spiceLevel}`);
+    formdata.append("seller_id", "66e5554ee68207c9b1dcd8df");
+    formdata.append("protein", protein);
+    formdata.append("carbs", carbs);
+    formdata.append("fiber", fiber);
+    formdata.append("non_veg", dietaryRestriction === 'non-veg');
+    formdata.append("spice_level", spiceLevel);
+    formdata.append("location", location);
 
-    // Encode the form data into a URL-encoded string
-    const urlEncodedData = new URLSearchParams(formData).toString();
+    // Append the image file if it exists
+    if (image) {
+      formdata.append("image", image);
+    }
 
-    // Define the URL with the base API URL
-    const apiUrl = 'https://9bf4-2607-b400-26-0-fc0e-6071-6267-b064.ngrok-free.app/dishes';
+    let headersList = {
+      "Accept": "*/*",
+    }
+
+    // Construct URL with query parameters
+    const params = new URLSearchParams({
+      title: dishName,
+      description: `A delicious ${dishName} prepared with care.`,
+      tags: `${dietaryRestriction}, ${spiceLevel}`,
+      protein,
+      carbs,
+      fiber,
+      spice_level: spiceLevel,
+      non_veg: dietaryRestriction === 'non-veg',
+      seller_id: "66e5554ee68207c9b1dcd8df",
+      location
+    });
+
+    let reqOptions = {
+      url: `https://bulldog-humane-ram.ngrok-free.app/dishes?${params.toString()}`,
+      method: "POST",
+      headers: headersList,
+      data: formdata,
+    }
 
     try {
-        // Make the POST request with the URL-encoded data
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded', // Set the content type to URL-encoded
-            },
-            body: urlEncodedData, // Send the encoded data in the body
-        });
-
-        // Handle the response
-        if (response.ok) {
-            const responseData = await response.json();
-            console.log('Success:', responseData);
-            // Optionally, handle the successful response (e.g., show a success message)
-        } else {
-            console.error('Error:', response.statusText);
-            // Optionally, handle the error (e.g., show an error message)
-        }
+      let response = await axios.request(reqOptions);
+      console.log('Success:', response.data);
+      // Optionally, handle the successful response (e.g., show a success message)
     } catch (error) {
-        console.error('Error:', error);
-        // Optionally, handle the fetch error (e.g., show an error message)
+      console.error('Error:', error);
+      // Optionally, handle the error (e.g., show an error message)
     }
 
     // Replace form with swipe cards after submission
     // setShowForm(false);
-	// alert(`Name: ${name}\nLocation: ${location}\nDish Name: ${dishName}\nImage: ${image ? image.name : 'No image selected'}`);
-};
-  
+  };
 
   // Handle image selection
   const handleImageChange = (e) => {

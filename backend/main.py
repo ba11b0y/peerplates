@@ -1,5 +1,6 @@
 import itertools
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -18,6 +19,15 @@ from azure import generate_response
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 class UserRole(Enum):
     SELLER = "seller"
