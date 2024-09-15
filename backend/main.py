@@ -9,12 +9,23 @@ from typing import List, Optional, Annotated
 from uuid import UUID
 from db import client
 from bson import ObjectId
-import base64
+import uuid
 import uvicorn
 from bson.binary import UUID as BsonUUID
 from typing import Optional, Annotated
 from enum import Enum
 from azure_api import generate_response, get_all_dishes
+from azure.storage.blob import BlobServiceClient
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
+
+# Azure Blob Storage configuration
+connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+container_name = os.getenv('AZURE_STORAGE_CONTAINER_NAME')
+blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+container_client = blob_service_client.get_container_client(container_name)
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
@@ -131,11 +142,16 @@ async def create_dish(
     spice_level: Optional[SpiceLevel],
     image: UploadFile = File(...)
 ):
-    image_base64 = None
-    if image:
-        image_content = await image.read()
-        image_base64 = base64.b64encode(image_content).decode('utf-8')
+    # Generate a unique filename for the image
+    image_filename = image.filename+str(uuid.uuid4())
     
+    # Upload the image to Azure Blob Storage
+    blob_client = container_client.get_blob_client(image_filename)
+    image_content = await image.read()
+    blob_client.upload_blob(image_content)
+    
+    # Get the URL of the uploaded image
+    image_url = blob_client.url
     
     nutrition = NutritionInfo(
         protein=protein or 0,
@@ -147,7 +163,7 @@ async def create_dish(
         title=title or "",
         description=description or "",
         seller_id=ObjectId(seller_id) if seller_id else None,
-        image_url=f"data:image/jpeg;base64,{image_base64}" if image_base64 else None,
+        image_url=image_url,
         tags=tags,
         nutrition=nutrition,
         non_veg=non_veg,
