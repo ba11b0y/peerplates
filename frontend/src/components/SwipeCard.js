@@ -1,48 +1,59 @@
-// src/components/SwipePage.js
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
+import { useSpring, animated, config } from 'react-spring';
 import { useSwipeable } from 'react-swipeable';
-import { useSpring, animated } from 'react-spring';
-import { FaCog, FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
-import ProfileImagePlaceholder from '../images/rishith.jpg';
-import MatchChat from './MatchChat'; // Import the MatchChat component
-import './SwipeCard.css';
+import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import axios from 'axios';
 
 function SwipePage() {
-  // State to manage form visibility
-  const [showForm, setShowForm] = useState(true);
-
-  // State for form input values
+  const [craving, setCraving] = useState('');
+  const [showPreferences, setShowPreferences] = useState(false);
   const [nonVeg, setNonVeg] = useState('yes');
-  const [protein, setProtein] = useState('');
-  const [carbs, setCarbs] = useState('');
-  const [fiber, setFiber] = useState('');
+  const [proteinRange, setProteinRange] = useState(50);
+  const [carbsRange, setCarbsRange] = useState(50);
+  const [fiberRange, setFiberRange] = useState(50);
   const [spiceLevel, setSpiceLevel] = useState('less');
-
   const [dishes, setDishes] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showDishes, setShowDishes] = useState(false);
 
-  // Chat window state for Matches and Messages
-  const [activeTab, setActiveTab] = useState('matches');
+  const typingTimeoutRef = useRef(null);
 
-  // New state to hold chat data
-  const [chats, setChats] = useState([]); // Store matches for chat
+  const fadeAnimation = useSpring({
+    opacity: showPreferences ? 1 : 0,
+    config: { tension: 300, friction: 20 },
+  });
 
-  // Handle form submission
+  const dishesAnimation = useSpring({
+    opacity: showDishes ? 1 : 0,
+    pointerEvents: showDishes ? 'auto' : 'none',
+    config: config.molasses,
+  });
+
+  const inputAnimation = useSpring({
+    opacity: showDishes ? 0 : 1,
+    pointerEvents: showDishes ? 'none' : 'auto',
+    config: config.molasses,
+  });
+
+  const handleCravingChange = (e) => {
+    setCraving(e.target.value);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      if (e.target.value) setShowPreferences(true);
+    }, 500);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Gather form data into an object
     const formData = {
       nonVeg,
-      protein,
-      carbs,
-      fiber,
+      protein: proteinRange,
+      carbs: carbsRange,
+      fiber: fiberRange,
       spiceLevel,
     };
 
-    // Create a comma-separated string of form data
     const formDataString = Object.entries(formData)
       .map(([key, value]) => `${key}:${value}`)
       .join(',');
@@ -52,261 +63,163 @@ function SwipePage() {
     try {
       const response = await axios.get(baseUrl);
       setDishes(response.data);
-      setShowForm(false);
+      setShowPreferences(false);
+      setShowDishes(true);
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  const [props, api] = useSpring(() => ({
-    x: 0,
-    rotate: 0,
-    config: { friction: 20 }, // Adjusting friction for more natural swiping
-  }));
+  const [{ x, rotate }, api] = useSpring(() => ({ x: 0, rotate: 0 }));
 
-  const swiped = (dir) => {
-    if (dir === 'Right') {
-      // When swiped right, add the dish to the chats
-      setChats((prevChats) => [...prevChats, dishes[currentIndex]]);
-    } else if (dir === 'Left') {
-      // Move to next dish
+  const swiped = (direction) => {
+    if (direction === 'right') {
+      // Handle right swipe (like)
+    } else {
+      // Handle left swipe (dislike)
       setCurrentIndex((prevIndex) => (prevIndex + 1) % dishes.length);
     }
-    // Reset the animation
-    api.start({ x: 0, rotate: 0 });
   };
 
   const handlers = useSwipeable({
-    onSwipedLeft: () => swiped('Left'),
-    onSwipedRight: () => swiped('Right'),
-    onSwiping: ({ deltaX }) => {
-      api.start({ x: deltaX, rotate: deltaX / 10 });
+    onSwipedLeft: () => swiped('left'),
+    onSwipedRight: () => swiped('right'),
+    onSwiping: (e) => {
+      api.start({
+        x: e.deltaX,
+        rotate: e.deltaX / 5,
+        config: { friction: 50, tension: 300 }
+      });
     },
-    delta: 50,
+    onSwiped: () => {
+      api.start({ x: 0, rotate: 0 });
+    },
     trackMouse: true,
   });
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Left Side (70%) */}
-      <div className="flex-[7] flex flex-col items-center justify-center bg-white">
-        {showForm ? (
-          // Form
-          <form className="w-full max-w-lg bg-white p-8 rounded-lg shadow-md" onSubmit={handleSubmit}>
-            {/* Form Fields */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Non-Veg</label>
-              <div className="flex ">
-                <label className="mr-4">
-                  <input
-                    type="radio"
-                    value="yes"
-                    checked={nonVeg === 'yes'}
-                    onChange={(e) => setNonVeg(e.target.value)}
-                    className="mr-2"
-                  />
-                  Yes
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    value="no"
-                    checked={nonVeg === 'no'}
-                    onChange={(e) => setNonVeg(e.target.value)}
-                    className="mr-2"
-                  />
-                  No
-                </label>
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      <animated.div style={inputAnimation} className="flex-1 flex flex-col items-center justify-center p-4">
+        <input
+          type="text"
+          value={craving}
+          onChange={handleCravingChange}
+          className="w-full max-w-md px-4 py-2 text-xl border-b-2 border-gray-300 focus:outline-none focus:border-blue-500 bg-transparent"
+          placeholder={showPreferences ? '' : "What are you craving today?"}
+        />
+
+        <animated.div style={fadeAnimation} className="mt-8 w-full max-w-md">
+          {showPreferences && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Non-Veg */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Non-Veg</label>
+                <div className="mt-1 flex items-center space-x-4">
+                  {['yes', 'no'].map((option) => (
+                    <label key={option} className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        value={option}
+                        checked={nonVeg === option}
+                        onChange={(e) => setNonVeg(e.target.value)}
+                        className="form-radio h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-gray-700">{option.charAt(0).toUpperCase() + option.slice(1)}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Protein */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="protein">
-                Protein (grams)
-              </label>
-              <input
-                id="protein"
-                type="text"
-                value={protein}
-                onChange={(e) => setProtein(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-opacity-50"
-                placeholder="Enter amount of protein"
-                required
-              />
-            </div>
-
-            {/* Carbs */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="carbs">
-                Carbs (grams)
-              </label>
-              <input
-                id="carbs"
-                type="text"
-                value={carbs}
-                onChange={(e) => setCarbs(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-opacity-50"
-                placeholder="Enter amount of carbs"
-                required
-              />
-            </div>
-
-            {/* Fiber */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="fiber">
-                Fiber (grams)
-              </label>
-              <input
-                id="fiber"
-                type="text"
-                value={fiber}
-                onChange={(e) => setFiber(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-opacity-50"
-                placeholder="Enter amount of fiber"
-                required
-              />
-            </div>
-
-            {/* Spice Level */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Spice Level</label>
-              <div className="flex items-center">
-                <label className="mr-4">
+              {/* Protein, Carbs, Fiber inputs */}
+              {['protein', 'carbs', 'fiber'].map((nutrient) => (
+                <div key={nutrient}>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {nutrient.charAt(0).toUpperCase() + nutrient.slice(1)}: {eval(`${nutrient}Range`)}g
+                  </label>
                   <input
-                    type="radio"
-                    value="less"
-                    checked={spiceLevel === 'less'}
-                    onChange={(e) => setSpiceLevel(e.target.value)}
-                    className="mr-2"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={eval(`${nutrient}Range`)}
+                    onChange={(e) => {
+                      const setValue = {
+                        protein: setProteinRange,
+                        carbs: setCarbsRange,
+                        fiber: setFiberRange
+                      }[nutrient];
+                      setValue(Number(e.target.value));
+                    }}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   />
-                  Less
-                </label>
-                <label className="mr-4">
-                  <input
-                    type="radio"
-                    value="medium"
-                    checked={spiceLevel === 'medium'}
-                    onChange={(e) => setSpiceLevel(e.target.value)}
-                    className="mr-2"
-                  />
-                  Medium
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    value="hot"
-                    checked={spiceLevel === 'hot'}
-                    onChange={(e) => setSpiceLevel(e.target.value)}
-                    className="mr-2"
-                  />
-                  Hot
-                </label>
+                </div>
+              ))}
+
+              {/* Spice Level */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Spice Level</label>
+                <div className="mt-1 flex items-center space-x-4">
+                  {['less', 'medium', 'hot'].map((level) => (
+                    <label key={level} className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        value={level}
+                        checked={spiceLevel === level}
+                        onChange={(e) => setSpiceLevel(e.target.value)}
+                        className="form-radio h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-gray-700">{level.charAt(0).toUpperCase() + level.slice(1)}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <div className="flex items-center justify-center">
               <button
                 type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring focus:ring-blue-300"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Submit
+                Find Dishes
               </button>
-            </div>
-          </form>
-        ) : (
-          // Swipe Cards with Yes/No Buttons
-          <div className="flex flex-col items-center justify-between h-full">
-            <div className="swipe-card-container flex items-center justify-center" {...handlers} style={{ flexGrow: 1 }}>
-              {dishes.length > 0 && (
-                <animated.div
-                  className="card"
-                  style={{
-                    ...props,
-                    backgroundImage: `url(${dishes[currentIndex].image_url})`,
-                    width: '120%',
-                    height: '90%',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    borderRadius: '15px',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-                  }}
-                >
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
-                    <h2 className="text-xl font-bold">{dishes[currentIndex].title}</h2>
-                    <p className="text-sm">{dishes[currentIndex].description}</p>
-                  </div>
-                </animated.div>
-              )}
-            </div>
-
-            {/* Yes/No Buttons */}
-            <div className="flex justify-between w-full max-w-lg mb-4 pb-4">
-              <button
-                onClick={() => swiped('Left')}
-                className="flex items-center justify-center w-16 h-16 bg-red-500 text-white rounded-full focus:outline-none"
-              >
-                <FaThumbsDown size={24} />
-              </button>
-              <button
-                onClick={() => swiped('Right')}
-                className="flex items-center justify-center w-16 h-16 bg-green-500 text-white rounded-full focus:outline-none"
-              >
-                <FaThumbsUp size={24} />
-              </button>
-            </div>
+            </form>
+          )}
+        </animated.div>
+      </animated.div>
+      
+      <animated.div style={dishesAnimation} className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4">
+        {dishes.length > 0 && (
+          <div className="relative w-full max-w-sm aspect-[3/4]" {...handlers}>
+            <animated.div
+              style={{
+                x,
+                rotate,
+                backgroundImage: `url(${dishes[currentIndex].image_url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+              className="absolute inset-0 bg-white rounded-xl shadow-xl overflow-hidden"
+            >
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent text-white p-6">
+                <h2 className="text-3xl font-bold mb-2">{dishes[currentIndex].title}</h2>
+                <p className="text-lg">{dishes[currentIndex].description}</p>
+              </div>
+            </animated.div>
           </div>
         )}
-      </div>
 
-      {/* Right Side (30%) - Chat Window with Shadow Effect */}
-      <div className="flex-[3] flex flex-col bg-gray-200 shadow-lg">
-        {/* Nav Bar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-orange-500 text-white">
-          <div className="flex items-center space-x-2">
-            {/* Profile Image Placeholder */}
-            <img src={ProfileImagePlaceholder} alt="Profile" className="w-10 h-10 rounded-full" />
-            <div className="font-bold">Rishith</div> {/* Replace with dynamic user data */}
-          </div>
-          {/* Settings Icon */}
-          <div className="bg-white text-orange-500 p-2 rounded-full">
-            <FaCog size={20} />
-          </div>
-        </div>
-
-        {/* Matches and Messages Tabs */}
-        <div className="flex justify-around bg-light-gray-300 p-2">
+        <div className="flex justify-center space-x-8 mt-8">
           <button
-            className={`flex-1 text-center py-2 ${activeTab === 'matches' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-600'}`}
-            onClick={() => setActiveTab('matches')}
+            onClick={() => swiped('left')}
+            className="p-4 bg-white text-red-500 rounded-full shadow-lg hover:bg-red-100 transition-colors"
           >
-            Matches
+            <FaThumbsDown size={32} />
           </button>
           <button
-            className={`flex-1 text-center py-2 ${activeTab === 'messages' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-600'}`}
-            onClick={() => setActiveTab('messages')}
+            onClick={() => swiped('right')}
+            className="p-4 bg-white text-green-500 rounded-full shadow-lg hover:bg-green-100 transition-colors"
           >
-            Messages
+            <FaThumbsUp size={32} />
           </button>
         </div>
-
-        {/* Chat Window */}
-        <div className="flex-1 bg-gray-100 p-4 overflow-y-auto">
-          {activeTab === 'matches' ? (
-            <div className="text-center text-gray-500">No matches</div>
-          ) : (
-            // Render MatchChat components for all chats
-            chats.length > 0 ? (
-              chats.map((chat, idx) => (
-                <MatchChat key={idx} userId="66e5574964f8c85fe6b58215" matchId={chat.id} />
-              ))
-            ) : (
-              <div className="text-center text-gray-500">No messages</div>
-            )
-          )}
-        </div>
-      </div>
+      </animated.div>
     </div>
   );
 }
