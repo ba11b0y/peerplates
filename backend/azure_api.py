@@ -38,6 +38,8 @@ def get_id_mapping(dishes):
 def format_dishes_with_new_ids(dishes, id_mapping):
     dishes_dict = {id_mapping[dish['_id']]: dish['description'] for dish in dishes}
 
+    print(f"dishes_dict: {dishes_dict}\n")
+
     return dishes_dict
 
 def get_all_dishes():
@@ -106,16 +108,17 @@ def send_azure_request(payload):
 
 def describe_food(title, tags, details):
     payload = construct_payload("", "describe", title, tags, details)
-    # return send_azure_request(payload)
-    return "This is a test response"
+    return send_azure_request(payload)
+    # return "This is a test response"
 
 def recommend_food(preference):
     all_dishes = get_all_dishes()
     id_mapping_dict = get_id_mapping(all_dishes)
     formatted_dishes = format_dishes_with_new_ids(all_dishes, id_mapping_dict)
     payload = construct_payload(preference, "recommend", all_dishes=formatted_dishes)
-    # response_text = send_azure_request(payload)
-    response_text = "food_id_2, food_id_1"
+    response_text = send_azure_request(payload)
+    print(f"gpt response: {response_text}\n")
+    # response_text = "food_id_1, food_id_2"
     sorted_food_ids = response_text.split(",")
     reverse_id_mapping_dict = {v: k for k, v in id_mapping_dict.items()}
     return [reverse_id_mapping_dict.get(food_id.strip()) for food_id in sorted_food_ids]

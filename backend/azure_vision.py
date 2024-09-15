@@ -68,11 +68,3 @@ def analyze_image_with_prompt(image_url, prompt):
 
     print(openai_response.choices[0].message.content)
     return openai_response.choices[0].message.content
-
-# Example usage
-# image_url = "https://learn.microsoft.com/azure/ai-services/computer-vision/media/quickstarts/presentation.png"
-# user_prompt = "Describe this image in detail, focusing on the main elements and their potential significance. If there's any text visible, please include it in your analysis."
-
-# analysis_result = analyze_image_with_prompt(image_url, user_prompt)
-# print("Image analysis results based on the prompt:")
-# print(analysis_result)

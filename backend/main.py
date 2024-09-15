@@ -175,22 +175,22 @@ async def create_dish(
     result = dishes_collection.insert_one(new_dish.model_dump(by_alias=True))
 
     # [WORKING] Get the description from Azure OpenAI
-    # description = get_description(
-    #     title=title,
-    #     tags=tags,
-    #     protein=protein,
-    #     carbs=carbs,
-    #     fiber=fiber,
-    #     non_veg=non_veg,
-    #     spice_level=spice_level,
-    #     image_url=image_url
-    # )
+    description = get_description(
+        title=title,
+        tags=tags,
+        protein=protein,
+        carbs=carbs,
+        fiber=fiber,
+        non_veg=non_veg,
+        spice_level=spice_level,
+        image_url=image_url
+    )
 
-    # # Update the dish with the description
-    # result = dishes_collection.update_one(
-    #     {"_id": result.inserted_id},
-    #     {"$set": {"description": description}}
-    # )
+    # Update the dish with the description
+    result = dishes_collection.update_one(
+        {"_id": result.inserted_id},
+        {"$set": {"description": description}}
+    )
 
     return CreateDishResponse(id=str(result.inserted_id))
 
@@ -208,19 +208,19 @@ async def update_dish(dish_id: UUID, updated_dish: Dish):
 async def list_dishes(
     preferences: str
 ):
-    return get_all_dishes()
+    # return get_all_dishes()
 
-    # result = generate_response(
-    #     prompt=preferences,
-    #     task="recommend",
-    # )
+    result = generate_response(
+        prompt=preferences,
+        task="recommend",
+    )
     
-    # object_ids = [ObjectId(id_str) for id_str in result]
+    object_ids = [ObjectId(id_str) for id_str in result]
     
-    # # Fetch dishes in the same order as the result list
-    # dishes = [dishes_collection.find_one({"_id": obj_id}) for obj_id in object_ids]
+    # Fetch dishes in the same order as the result list
+    dishes = [dishes_collection.find_one({"_id": obj_id}) for obj_id in object_ids]
     
-    # return [dish for dish in dishes if dish is not None]
+    return [dish for dish in dishes if dish is not None]
 
 @app.get("/get_description", response_model=str)
 async def get_description(
