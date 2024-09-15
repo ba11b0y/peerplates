@@ -1,5 +1,5 @@
 import itertools
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -18,6 +18,7 @@ from azure_api import generate_response, get_all_dishes
 from azure.storage.blob import BlobServiceClient
 import os
 from dotenv import load_dotenv
+from chat import chat_endpoint
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -294,6 +295,9 @@ async def ask_gpt4(prompt: str, task: str, context: str = None):
 
     return response
 
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
+    await chat_endpoint(websocket, user_id)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
