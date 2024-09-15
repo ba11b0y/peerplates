@@ -35,28 +35,24 @@ function Home() {
         
         {/* Heading and Tagline */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <h1 className="text-7xl font-bold mb-4">Peer Plates</h1>
-          <p className="text-2xl">Share the Taste of Health</p>
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-2 md:mb-4 text-center">Peer Plates</h1>
+          <p className="text-xl md:text-2xl text-center">Share the Taste of Health</p>
         </div>
       </div>
 
       {/* Lower part - 40% height */}
-      <div className="flex-[4] flex flex-col items-center justify-center">
+      <div className="flex-[4] flex flex-col items-center justify-center p-4">
         {/* Buttons with Images */}
-        <div className="flex items-center space-x-16">
+        <div className="flex flex-col md:flex-row items-center space-y-8 md:space-y-0 md:space-x-16">
           {/* Buy Section */}
-          <div className="flex items-center space-x-4">
-            {/* Image to the left of Buy button */}
-            <img src={BuyImage} alt="Buy" className="w-40 h-40" />
-            {/* Buy Button */}
+          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+            <img src={BuyImage} alt="Buy" className="w-32 h-32 md:w-40 md:h-40" />
             <button
               onClick={handleBuy}
-              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full w-64 h-24 font-bold"
+              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full w-64 h-16 md:h-24 font-bold"
             >
-              <span className="absolute left-0 top-0 h-[200px] w-[200px] -translate-y-3 translate-x-14 rotate-45 bg-orange-500 opacity-[3%]"></span>
-              <span className="absolute left-0 top-0 -mt-1 h-[288px] w-[288px] -translate-x-80 -translate-y-40 rotate-45 bg-orange-500 opacity-100 transition-transform duration-500 ease-in-out group-hover:translate-x-0 group-hover:translate-y-0"></span>
-              <span className="relative text-center text-orange-500 text-2xl transition-colors duration-200 ease-in-out group-hover:text-white">
-
+              {/* ... existing button spans ... */}
+              <span className="relative text-center text-orange-500 text-xl md:text-2xl transition-colors duration-200 ease-in-out group-hover:text-white">
                 Grab a Bite
               </span>
               <span className="absolute inset-0 rounded-full border-2 border-black"></span>
@@ -64,22 +60,18 @@ function Home() {
           </div>
 
           {/* Sell Section */}
-          <div className="flex items-center space-x-4">
-            {/* Sell Button */}
+          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
             <button
               onClick={handleSell}
-              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full w-64 h-24 font-bold"
+              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full w-64 h-16 md:h-24 font-bold"
             >
-              <span className="absolute left-0 top-0 h-[200px] w-[200px] -translate-y-3 translate-x-14 rotate-45 bg-orange-500 opacity-[3%]"></span>
-              <span className="absolute left-0 top-0 -mt-1 h-[288px] w-[288px] -translate-x-80 -translate-y-40 rotate-45 bg-orange-500 opacity-100 transition-transform duration-500 ease-in-out group-hover:translate-x-0 group-hover:translate-y-0"></span>
-              <span className="relative text-center text-orange-500 text-2xl transition-colors duration-200 ease-in-out group-hover:text-white">
-
+              {/* ... existing button spans ... */}
+              <span className="relative text-center text-orange-500 text-xl md:text-2xl transition-colors duration-200 ease-in-out group-hover:text-white">
                 Share Your Dish
               </span>
               <span className="absolute inset-0 rounded-full border-2 border-black"></span>
             </button>
-            {/* Image to the right of Sell button */}
-            <img src={SellImage} alt="Sell" className="w-40 h-40" />
+            <img src={SellImage} alt="Sell" className="w-32 h-32 md:w-40 md:h-40" />
           </div>
         </div>
       </div>
