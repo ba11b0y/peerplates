@@ -1,4 +1,3 @@
-import itertools
 from fastapi import FastAPI, HTTPException, UploadFile, File, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -19,7 +18,6 @@ from azure.storage.blob import BlobServiceClient
 from azure_vision import analyze_image_with_prompt
 import os
 from dotenv import load_dotenv
-from chat import chat_endpoint
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -36,7 +34,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*", "https://peerplatesai.us"],  # Allows all origins
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -187,7 +185,7 @@ async def create_dish(
     )
 
     # Update the dish with the description
-    result = dishes_collection.update_one(
+    dishes_collection.update_one(
         {"_id": result.inserted_id},
         {"$set": {"description": description}}
     )
@@ -222,8 +220,7 @@ async def list_dishes(
     
     return [dish for dish in dishes if dish is not None]
 
-@app.get("/get_description", response_model=str)
-async def get_description(
+def get_description(
     title: str,
     tags: Optional[str] = None,
     protein: Optional[float] = None,
@@ -318,21 +315,6 @@ async def add_rating(user_id: str, rating: float):
 
     return {"message": "Rating added successfully", "average_rating": new_average_rating, "num_ratings": new_num_ratings}   
         
-
-# add api to communicate with azure openai
-@app.post("/ask_gpt4")
-async def ask_gpt4(prompt: str, task: str, context: str = None):
-    response = generate_response(
-        user_prompt=prompt,
-        task=task,
-        context=context
-    )
-
-    return response
-
-@app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
-    await chat_endpoint(websocket, user_id)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
