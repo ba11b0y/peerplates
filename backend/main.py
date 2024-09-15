@@ -16,6 +16,7 @@ from typing import Optional, Annotated
 from enum import Enum
 from azure_api import generate_response, get_all_dishes
 from azure.storage.blob import BlobServiceClient
+from azure_vision import analyze_image_with_prompt
 import os
 from dotenv import load_dotenv
 from chat import chat_endpoint
@@ -172,6 +173,25 @@ async def create_dish(
     )
     
     result = dishes_collection.insert_one(new_dish.model_dump(by_alias=True))
+
+    # [WORKING] Get the description from Azure OpenAI
+    # description = get_description(
+    #     title=title,
+    #     tags=tags,
+    #     protein=protein,
+    #     carbs=carbs,
+    #     fiber=fiber,
+    #     non_veg=non_veg,
+    #     spice_level=spice_level,
+    #     image_url=image_url
+    # )
+
+    # # Update the dish with the description
+    # result = dishes_collection.update_one(
+    #     {"_id": result.inserted_id},
+    #     {"$set": {"description": description}}
+    # )
+
     return CreateDishResponse(id=str(result.inserted_id))
 
 # Update a dish
@@ -205,18 +225,33 @@ async def list_dishes(
 @app.get("/get_description", response_model=str)
 async def get_description(
     title: str,
-    tags: str,
-    details: str,
-    image: Optional[UploadFile] = File(None)
+    tags: Optional[str] = None,
+    protein: Optional[float] = None,
+    carbs: Optional[float] = None,
+    fiber: Optional[float] = None,
+    non_veg: Optional[bool] = None,
+    spice_level: Optional[SpiceLevel] = None,
+    image_url: Optional[str] = None,
 ):
     
-    response = generate_response(
-        prompt=f"title: {title}, tags: {tags}, details: {details}",
-        task="describe",
-        title=title,
-        tags=tags,
-        details=details,
-        # image=image
+    image_url = image_url or "https://vthackspeerplates.blob.core.windows.net/peerplatesimages/1fac77ee-e66f-45ea-a9b8-a76023c75612.JPGd0456e15-1cd7-4d3d-8f26-332d13fe7b3e"
+    prompt = f"title: {title}"
+    if tags:
+        prompt += f", tags: {tags}"
+    if protein:
+        prompt += f", protein: {protein}"
+    if carbs:
+        prompt += f", carbs: {carbs}"
+    if fiber:
+        prompt += f", fiber: {fiber}"
+    if non_veg:
+        prompt += f", non_veg: {non_veg}"
+    if spice_level:
+        prompt += f", spice_level: {spice_level.value}"
+
+    response = analyze_image_with_prompt(
+        image_url=image_url,
+        prompt=prompt
     )
     
     return response
