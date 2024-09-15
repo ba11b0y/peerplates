@@ -17,7 +17,9 @@ function SellerChat() {
 
   const syncConversation = useCallback((session) => {
     // JavaScript SDK code here
-    const conversation = session.getOrCreateConversation('new_conversation');
+    // generate random conversation id
+    const conversationId = Math.random().toString(36).substring(2, 15);
+    const conversation = session.getOrCreateConversation(conversationId);
 
     const other = new Talk.User({
       id: 'rishith',

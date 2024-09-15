@@ -9,7 +9,7 @@ function Chat() {
         id: 'rishith',
         name: 'Rishith',
         email: 'rishith@example.com',
-        photoUrl: 'https://talkjs.com/new-web/avatar-8.jpg',
+        photoUrl: 'https://vthackspeerplates.blob.core.windows.net/peerplatesimages/rishith.jpg',
         welcomeMessage: 'Hi!',
       }),
     []
@@ -17,13 +17,14 @@ function Chat() {
 
   const syncConversation = useCallback((session) => {
     // JavaScript SDK code here
-    const conversation = session.getOrCreateConversation('new_conversation');
+    const conversationId = Math.random().toString(36).substring(2, 15);
+    const conversation = session.getOrCreateConversation(conversationId);
 
     const other = new Talk.User({
       id: 'rahul',
       name: 'Rahul',
       email: 'rahul@example.com',
-      photoUrl: 'https://talkjs.com/new-web/avatar-7.jpg',
+      photoUrl: 'https://vthackspeerplates.blob.core.windows.net/peerplatesimages/good_pop copy.jpeg',
     });
     conversation.setParticipant(session.me);
     conversation.setParticipant(other);
