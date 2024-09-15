@@ -10,7 +10,6 @@ function SellerChat() {
         name: 'Rahul',
         email: 'rahul@example.com',
         photoUrl: 'https://vthackspeerplates.blob.core.windows.net/peerplatesimages/good_pop copy.jpeg',
-        welcomeMessage: 'Hi!',
       }),
     []
   );
