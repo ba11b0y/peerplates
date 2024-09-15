@@ -10,7 +10,6 @@ function Chat() {
         name: 'Rishith',
         email: 'rishith@example.com',
         photoUrl: 'https://vthackspeerplates.blob.core.windows.net/peerplatesimages/rishith.jpg',
-        welcomeMessage: 'Hi!',
       }),
     []
   );
