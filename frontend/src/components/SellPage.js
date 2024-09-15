@@ -68,6 +68,7 @@ function SellPage() {
     try {
       let response = await axios.request(reqOptions);
       console.log('Success:', response.data);
+	  
       // Optionally, handle the successful response (e.g., show a success message)
     } catch (error) {
       console.error('Error:', error);

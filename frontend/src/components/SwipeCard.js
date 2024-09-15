@@ -1,63 +1,27 @@
 // src/components/SwipePage.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { useSpring, animated } from 'react-spring';
-import { FaCog, FaThumbsDown, FaThumbsUp } from 'react-icons/fa'; // Import FontAwesome icons
-import ProfileImagePlaceholder from '../images/rishith.jpg'; // Replace with the path to your placeholder image
-import image1 from '../images/image1.jpg';
-import image2 from '../images/image2.webp';
-import './SwipeCard.css'; // Ensure you have styles defined for the swipe card
-
-const images = [image1, image2];
+import { FaCog, FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
+import ProfileImagePlaceholder from '../images/rishith.jpg';
+import './SwipeCard.css';
+import axios from 'axios';
 
 function SwipePage() {
   // State to manage form visibility
   const [showForm, setShowForm] = useState(true);
 
   // State for form input values
-  const [name, setName] = useState('');
+  // const [name, setName] = useState('');
   const [nonVeg, setNonVeg] = useState('yes');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fiber, setFiber] = useState('');
   const [spiceLevel, setSpiceLevel] = useState('less');
 
-  // Swipe card logic
-  const [cards, setCards] = useState(images);
+  const [dishes, setDishes] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const [props, api] = useSpring(() => ({
-    x: 0,
-    rotate: 0,
-  }));
-
-  const swiped = (dir) => {
-    if (dir === 'Right') {
-      // Perform action on swipe right
-      alert('Swiped Right');
-    } else if (dir === 'Left') {
-      // Move card to the back of the stack
-      setCards((prevCards) => {
-        const updatedCards = [...prevCards];
-        const [firstCard] = updatedCards.splice(currentIndex, 1);
-        updatedCards.push(firstCard);
-        return updatedCards;
-      });
-    }
-    // Reset the animation
-    api.start({ x: 0, rotate: 0 });
-  };
-
-  const handlers = useSwipeable({
-    onSwipedLeft: () => swiped('Left'),
-    onSwipedRight: () => swiped('Right'),
-    onSwiping: ({ deltaX }) => {
-      api.start({ x: deltaX, rotate: deltaX / 10 });
-    },
-    delta: 50,
-    trackMouse: true,
-  });
 
   // Chat window state for Matches and Messages
   const [activeTab, setActiveTab] = useState('matches');
@@ -75,40 +39,49 @@ function SwipePage() {
         spiceLevel,
     };
 
-    // Encode the form data into a URL-encoded string
-    const urlEncodedData = new URLSearchParams(formData).toString();
+    // Create a comma-separated string of form data
+    const formDataString = Object.entries(formData)
+        .map(([key, value]) => `${key}:${value}`)
+        .join(',');
 
-    // Define the URL with the base API URL
-    const apiUrl = 'https://9bf4-2607-b400-26-0-fc0e-6071-6267-b064.ngrok-free.app/dishes';
+    const baseUrl = `https://bulldog-humane-ram.ngrok-free.app/dishes?preferences=${formDataString}`;
 
     try {
-        // Make the POST request with the URL-encoded data
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded', // Set the content type to URL-encoded
-            },
-            body: urlEncodedData, // Send the encoded data in the body
-        });
-
-        // Handle the response
-        if (response.ok) {
-            const responseData = await response.json();
-            console.log('Success:', responseData);
-            // Optionally, handle the successful response (e.g., show a success message)
-        } else {
-            console.error('Error:', response.statusText);
-            // Optionally, handle the error (e.g., show an error message)
-        }
+        const response = await axios.get(baseUrl);
+        setDishes(response.data);
+        setShowForm(false);
     } catch (error) {
         console.error('Error:', error);
-        // Optionally, handle the fetch error (e.g., show an error message)
     }
+  };
 
-    // Replace form with swipe cards after submission
-    setShowForm(false);
-};
+  const [props, api] = useSpring(() => ({
+    x: 0,
+    rotate: 0,
+    config: { friction: 20 }, // Adjusting friction for more natural swiping
+  }));
 
+  const swiped = (dir) => {
+    if (dir === 'Right') {
+      // Perform action on swipe right
+      alert('Liked: ' + dishes[currentIndex].title);
+    } else if (dir === 'Left') {
+      // Move to next dish
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % dishes.length);
+    }
+    // Reset the animation
+    api.start({ x: 0, rotate: 0 });
+  };
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => swiped('Left'),
+    onSwipedRight: () => swiped('Right'),
+    onSwiping: ({ deltaX }) => {
+      api.start({ x: deltaX, rotate: deltaX / 10 });
+    },
+    delta: 50,
+    trackMouse: true,
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -242,28 +215,31 @@ function SwipePage() {
         ) : (
           // Swipe Cards with Yes/No Buttons
           <div className="flex flex-col items-center justify-between h-full">
-            <div className="swipe-card-container flex items-center justify-center" style={{ flexGrow: 1 }}>
-              {cards.slice(currentIndex, currentIndex + 3).map((image, index) => (
+            <div className="swipe-card-container flex items-center justify-center" {...handlers} style={{ flexGrow: 1 }}>
+              {dishes.length > 0 && (
                 <animated.div
-                  key={index}
                   className="card"
                   style={{
                     ...props,
-                    zIndex: cards.length - index,
-                    backgroundImage: `url(${image})`,
-                    width: '120%', // Adjust width as needed
-                    height: '90%', // Use height to fill the available space
-                    backgroundSize: 'cover', // Ensure the image covers the card
-                    backgroundPosition: 'center', // Center the image within the card
-                    borderRadius: '15px', // Optional: round corners
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', // Optional: add shadow for depth
+                    backgroundImage: `url(${dishes[currentIndex].image_url})`,
+                    width: '120%',
+                    height: '90%',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    borderRadius: '15px',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
                   }}
-                ></animated.div>
-              ))}
+                >
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
+                    <h2 className="text-xl font-bold">{dishes[currentIndex].title}</h2>
+                    <p className="text-sm">{dishes[currentIndex].description}</p>
+                  </div>
+                </animated.div>
+              )}
             </div>
 
             {/* Yes/No Buttons */}
-            <div className="flex justify-between w-full max-w-lg mb-4 pb-4"> {/* Added padding bottom */}
+            <div className="flex justify-between w-full max-w-lg mb-4 pb-4">
               <button
                 onClick={() => swiped('Left')}
                 className="flex items-center justify-center w-16 h-16 bg-red-500 text-white rounded-full focus:outline-none"
