@@ -3,8 +3,10 @@ import { useSpring, animated, config } from 'react-spring';
 import { useSwipeable } from 'react-swipeable';
 import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 function SwipePage() {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [craving, setCraving] = useState('');
   const [showPreferences, setShowPreferences] = useState(false);
   const [nonVeg, setNonVeg] = useState('yes');
@@ -75,6 +77,7 @@ function SwipePage() {
   const swiped = (direction) => {
     if (direction === 'right') {
       // Handle right swipe (like)
+      navigate(`/chat/${currentIndex}`, { state: { dish: dishes[currentIndex] } });
     } else {
       // Handle left swipe (dislike)
       setCurrentIndex((prevIndex) => (prevIndex + 1) % dishes.length);

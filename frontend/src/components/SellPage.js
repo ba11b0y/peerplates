@@ -1,11 +1,12 @@
 // src/components/SellPage.js
 
 import React, { useState } from 'react';
-import { FaCog, FaCheckCircle } from 'react-icons/fa'; // Import FaCheckCircle
-import ProfileImagePlaceholder from '../images/rishith.jpg'; // Replace with the path to your placeholder image
+import { FaCheckCircle, FaComments } from 'react-icons/fa';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function SellPage() {
+  const navigate = useNavigate();
   // State variables to handle form data
   const [location, setLocation] = useState('');
   const [dishName, setDishName] = useState('');
@@ -15,7 +16,6 @@ function SellPage() {
   const [fiber, setFiber] = useState('');
   const [spiceLevel, setSpiceLevel] = useState('');
   const [image, setImage] = useState(null);
-  const [activeTab, setActiveTab] = useState('matches'); // To toggle between "Matches" and "Messages"
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Handle form submission
@@ -34,7 +34,6 @@ function SellPage() {
     formdata.append("spice_level", spiceLevel);
     formdata.append("location", location);
 
-    // Append the image file if it exists
     if (image) {
       formdata.append("image", image);
     }
@@ -43,7 +42,6 @@ function SellPage() {
       "Accept": "*/*",
     }
 
-    // Construct URL with query parameters
     const params = new URLSearchParams({
       title: dishName,
       description: `A delicious ${dishName} prepared with care.`,
@@ -96,13 +94,16 @@ function SellPage() {
     }
   };
 
+  const navigateToChat = () => {
+    navigate('/seller-chat');
+  };
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Left Side (70%) - Form */}
-      <div className="flex-[7] flex items-center justify-center">
-        <form className="w-full max-w-lg bg-white p-8 rounded-lg shadow-md" onSubmit={handleSubmit}>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center relative">
+      <div className="w-full max-w-lg bg-white p-8 rounded-lg shadow-md">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Location */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="location">
               Location
             </label>
@@ -118,7 +119,7 @@ function SellPage() {
           </div>
 
           {/* Dish Name */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="dishName">
               Dish Name
             </label>
@@ -134,42 +135,42 @@ function SellPage() {
           </div>
 
           {/* Dietary Restriction */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2">
               Dietary Restriction
             </label>
-            <div className="flex items-center">
-              <label className="mr-4">
+            <div className="flex items-center space-x-4">
+              <label className="inline-flex items-center">
                 <input
                   type="radio"
                   value="veg"
                   checked={dietaryRestriction === 'veg'}
                   onChange={(e) => setDietaryRestriction(e.target.value)}
-                  className="mr-2"
+                  className="form-radio"
                 />
-                Veg
+                <span className="ml-2">Veg</span>
               </label>
-              <label>
+              <label className="inline-flex items-center">
                 <input
                   type="radio"
                   value="non-veg"
                   checked={dietaryRestriction === 'non-veg'}
                   onChange={(e) => setDietaryRestriction(e.target.value)}
-                  className="mr-2"
+                  className="form-radio"
                 />
-                Non-Veg
+                <span className="ml-2">Non-Veg</span>
               </label>
             </div>
           </div>
 
           {/* Protein */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="protein">
               Protein (grams)
             </label>
             <input
               id="protein"
-              type="text"
+              type="number"
               value={protein}
               onChange={(e) => setProtein(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-opacity-50"
@@ -179,13 +180,13 @@ function SellPage() {
           </div>
 
           {/* Carbs */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="carbs">
               Carbs (grams)
             </label>
             <input
               id="carbs"
-              type="text"
+              type="number"
               value={carbs}
               onChange={(e) => setCarbs(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-opacity-50"
@@ -195,13 +196,13 @@ function SellPage() {
           </div>
 
           {/* Fiber */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="fiber">
               Fiber (grams)
             </label>
             <input
               id="fiber"
-              type="text"
+              type="number"
               value={fiber}
               onChange={(e) => setFiber(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-opacity-50"
@@ -211,46 +212,46 @@ function SellPage() {
           </div>
 
           {/* Spice Level */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2">
               Spice Level
             </label>
-            <div className="flex items-center">
-              <label className="mr-4">
+            <div className="flex items-center space-x-4">
+              <label className="inline-flex items-center">
                 <input
                   type="radio"
                   value="less"
                   checked={spiceLevel === 'less'}
                   onChange={(e) => setSpiceLevel(e.target.value)}
-                  className="mr-2"
+                  className="form-radio"
                 />
-                Less
+                <span className="ml-2">Less</span>
               </label>
-              <label className="mr-4">
+              <label className="inline-flex items-center">
                 <input
                   type="radio"
                   value="medium"
                   checked={spiceLevel === 'medium'}
                   onChange={(e) => setSpiceLevel(e.target.value)}
-                  className="mr-2"
+                  className="form-radio"
                 />
-                Medium
+                <span className="ml-2">Medium</span>
               </label>
-              <label>
+              <label className="inline-flex items-center">
                 <input
                   type="radio"
                   value="hot"
                   checked={spiceLevel === 'hot'}
                   onChange={(e) => setSpiceLevel(e.target.value)}
-                  className="mr-2"
+                  className="form-radio"
                 />
-                Hot
+                <span className="ml-2">Hot</span>
               </label>
             </div>
           </div>
 
           {/* Image Picker */}
-          <div className="mb-4">
+          <div>
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="image">
               Upload Image
             </label>
@@ -263,7 +264,7 @@ function SellPage() {
             />
           </div>
 
-          {/* Submit Button and Success Message */}
+          {/* Submit Button */}
           <div className="flex items-center justify-center">
             <button
               type="submit"
@@ -282,47 +283,15 @@ function SellPage() {
           )}
         </form>
       </div>
-
-      {/* Right Side (30%) - Chat Window */}
-      <div className="flex-[3] flex flex-col bg-gray-200">
-        {/* Nav Bar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-orange-500 text-white">
-          <div className="flex items-center space-x-2">
-            {/* Profile Image Placeholder */}
-            <img src={ProfileImagePlaceholder} alt="Profile" className="w-10 h-10 rounded-full" />
-            <div className="font-bold">Rishith</div> {/* Replace with dynamic user data */}
-          </div>
-          {/* Settings Icon */}
-          <div className="bg-white text-orange-500 p-2 rounded-full">
-            <FaCog size={20} />
-          </div>
-        </div>
-
-        {/* Matches and Messages Tabs */}
-        <div className="flex justify-around bg-light-gray-300 p-2">
-          <button
-            className={`flex-1 text-center py-2 ${activeTab === 'matches' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-600'}`}
-            onClick={() => setActiveTab('matches')}
-          >
-            Matches
-          </button>
-          <button
-            className={`flex-1 text-center py-2 ${activeTab === 'messages' ? 'border-b-2 border-orange-500 text-orange-500' : 'text-gray-600'}`}
-            onClick={() => setActiveTab('messages')}
-          >
-            Messages
-          </button>
-        </div>
-
-        {/* Chat Window */}
-        <div className="flex-1 bg-gray-100 p-4 overflow-y-auto">
-          {activeTab === 'matches' ? (
-            <div className="text-center text-gray-500">No matches</div>
-          ) : (
-            <div className="text-center text-gray-500">No messages</div>
-          )}
-        </div>
-      </div>
+      
+      {/* Chat Button */}
+      <button
+        onClick={navigateToChat}
+        className="fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-3 shadow-lg transition-colors duration-200"
+        aria-label="Open Chat"
+      >
+        <FaComments size={24} />
+      </button>
     </div>
   );
 }
